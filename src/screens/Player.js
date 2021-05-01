@@ -7,7 +7,6 @@ import PlayerButton from '../components/PlayerButton';
 import Screen from '../components/Screen';
 import color from '../misc/color';
 import { AudioContext } from '../context/AudioProvider';
-import tIcon from '../assets/tone.png';
 import { pause, play, playNext, resume } from '../misc/audioController';
 import { storeAudioForNextOpening } from '../misc/helper';
 

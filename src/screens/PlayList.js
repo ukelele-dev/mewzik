@@ -1,12 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState, useContext } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, FlatList, Alert } from 'react-native';
 import PlayListInputModal from '../components/PlayListInputModal';
 import color from '../misc/color';
 import { AudioContext } from '../context/AudioProvider';
+import PlaylistDetail from '../components/PlaylisDetail';
+
+let selectedPlaylist = {}
 
 const PlayList = () => {
     const [modalVisible, setModalVisible] = useState(false)
+    const [showPlaylist, setShowPlaylist] = useState(false)
 
     const context = useContext(AudioContext)
     const {playlist, addToPlaylist, updateState} = context
@@ -26,7 +30,7 @@ const PlayList = () => {
 
             const updatedList = [...playlist, newList]
             updateState(context, {addToPlaylist: null, playlist: updatedList})
-            AsyncStorage.setItem('playlist', JSON.stringify(updatedList))
+            await AsyncStorage.setItem('playlist', JSON.stringify(updatedList))
         }
         setModalVisible(false)
     }
@@ -51,18 +55,59 @@ const PlayList = () => {
             renderPlaylist()
         }
     }, [])
+
+    const handleBannerPress = async (playlist) => {
+        // update playlist if there is any selected audio
+        if (addToPlaylist){
+            //check if the same audio is already inside the playlist
+            const result = await AsyncStorage.getItem('playlist')
+
+            let oldList = []
+            let updatedList = []
+            let sameAudio = false
+
+            if (result !== null){
+                oldList = JSON.parse(result)
+                updatedList = oldList.filter(list => {
+                    if (list.id === playlist.id){
+                        for (let audio of list.audios){
+                            if (audio.id === addToPlaylist.id){
+                                sameAudio = true
+                                return
+                            }
+                        }
+
+                        list.audios = [...list.audios, addToPlaylist]
+                    }
+                    return list
+                })
+            }
+            if(sameAudio){
+                Alert.alert('Mesma música encontrada!', `${addToPlaylist.filename} já existe nesta Playlist`)
+                sameAudio = false
+                return updateState(context, {addToPlaylist: null})
+            }
+
+            updateState(context, {addToPlaylist: null, playlist: [...updatedList]})
+            return AsyncStorage.setItem('playlist', JSON.stringify([...updatedList]))
+        }
+        //if there is no audio selected then we want to open the list
+        selectedPlaylist = playlist
+        setShowPlaylist(true)
+    }
   
     return (
+        <>
       <ScrollView contentContainerStyle={styles.container}>
 
           {playlist.length 
           ? playlist.map(item => (
-          <TouchableOpacity key={item.id.toString()} style={styles.playlistBanner}>
+          <TouchableOpacity key={item.id.toString()} style={styles.playlistBanner} onPress={() => handleBannerPress(item)}>
               <Text>{item.title}</Text>
               <Text style={styles.audioCount}>
                   {item.audios.length > 1 
-                  ? `${item.audios.length} Songs` 
-                  : `${item.audios.length} Song`}
+                  ? `${item.audios.length} músicas` 
+                  : `${item.audios.length} música`}
               </Text>
           </TouchableOpacity>
           )) 
@@ -82,6 +127,8 @@ const PlayList = () => {
             />
 
       </ScrollView>
+      <PlaylistDetail visible={showPlaylist} playlist={selectedPlaylist} onClose={() => setShowPlaylist(false)}/>
+      </>
   )
 }
 
