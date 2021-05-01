@@ -117,7 +117,7 @@ const PlayList = () => {
           onPress={() => setModalVisible(true)}
           style={{marginTop: 15}}
           >
-              <Text style={styles.playlistButton}>+ Add New Playlist</Text>
+              <Text style={styles.playlistButton}>+ Nova Playlist</Text>
           </TouchableOpacity>
 
             <PlayListInputModal 
